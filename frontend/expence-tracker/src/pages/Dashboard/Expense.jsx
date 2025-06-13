@@ -9,6 +9,7 @@ import Modal from '../../components/Modal';
 import AddExpenseForm from '../../components/Expense/AddExpenseForm';
 import ExpenseList from '../../components/Expense/ExpenseList';
 import DeleteAlert from '../../components/DeleteAlert';
+import VoiceCommandButton from '../../components/VoiceCommandButton';
 
 const Expense = () => {
 
@@ -119,6 +120,30 @@ const Expense = () => {
     }
    };
 
+  // Handle Voice Command
+  const handleVoiceCommand = async (commandData) => {
+    try {
+      // Validate the command data
+      if (!commandData.amount || !commandData.category) {
+        toast.error("Invalid command data. Please try again.");
+        return;
+      }
+
+      // Add the expense using the existing handleAddExpense function
+      await handleAddExpense({
+        category: commandData.category,
+        amount: commandData.amount,
+        date: commandData.date,
+        // The icon will be selected in the AddExpenseForm component
+      });
+
+      // Refresh the expense list
+      fetchExpenseDetails();
+    } catch (error) {
+      console.error("Error processing voice command:", error);
+      toast.error("Failed to process voice command. Please try again.");
+    }
+  };
 
   useEffect(() => {
     fetchExpenseDetails();
@@ -130,6 +155,12 @@ const Expense = () => {
     <DashboardLayout activeMenu="Expense">
         <div className='my-5 mx-auto'>
           <div className='grid grid-cols-1 gap-6'>
+            <div className='flex justify-between items-center mb-4'>
+              <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                Expense Dashboard
+              </h1>
+              <VoiceCommandButton onCommand={handleVoiceCommand} type="expense" />
+            </div>
             <div className=''>
               <ExpenseOverview
                 transactions={expenseData}

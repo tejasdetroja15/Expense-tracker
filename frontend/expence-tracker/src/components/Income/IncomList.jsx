@@ -26,6 +26,7 @@ const IncomeList = ({ transactions, onDelete, onDownload }) => {
             amount={income.amount}
             type="income"
             onDelete={() => onDelete(income._id)}
+            isVoiceCommand={income.isVoiceCommand}
           />
         ))}
       </div>
