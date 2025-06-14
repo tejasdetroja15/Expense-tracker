@@ -35,7 +35,9 @@ const Income = () => {
       );
 
       if(response.data){
-        setIncomeData(response.data);
+        // Sort income data by date in descending order (newest first)
+        const sortedIncomeData = response.data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setIncomeData(sortedIncomeData);
       }
     } catch(error) {
       console.log("Something went wrong, Please try again", error);
@@ -203,11 +205,13 @@ const Income = () => {
             <h1 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2 sm:mb-0`}>
               Income Dashboard
             </h1>
-            <VoiceCommandButton onCommand={handleVoiceCommand} type="income" />
+            <div className="flex flex-col items-end w-full sm:w-auto mt-4 sm:mt-0">
+              <VoiceCommandButton onCommand={handleVoiceCommand} type="income" />
+              <p className={`text-sm mt-2 mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>
+                Try saying: "add income <span className="font-semibold">(amount)</span> as <span className="font-semibold">(source)</span>"
+              </p>
+            </div>
           </div>
-          <p className={`text-sm mt-2 mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>
-            Try saying: "add income <span className="font-semibold">(amount)</span> as <span className="font-semibold">(source)</span>"
-          </p>
 
         <div className="mt-6 w-full">
             <IncomeOverview

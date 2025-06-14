@@ -208,11 +208,14 @@ const Expense = () => {
             <h1 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2 sm:mb-0`}>
               Expense Dashboard
             </h1>
-            <VoiceCommandButton onCommand={handleVoiceCommand} type="expense" />
+            {/* Wrap VoiceCommandButton and message in a column flex container for vertical stacking */}
+            <div className="flex flex-col items-end w-full sm:w-auto mt-4 sm:mt-0">
+              <VoiceCommandButton onCommand={handleVoiceCommand} type="expense" />
+              <p className={`text-sm mt-2 mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}> {/* Adjusted mb */}
+                Try saying: "add expense <span className="font-semibold">(amount)</span> as <span className="font-semibold">(category)</span>"
+              </p>
+            </div>
           </div>
-          <p className={`text-sm mt-2 mb-4 ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>
-            Try saying: "add expense <span className="font-semibold">(amount)</span> as <span className="font-semibold">(category)</span>"
-          </p>
 
           {/* Full width graph section */}
           <div className="w-full mb-8">
@@ -223,7 +226,7 @@ const Expense = () => {
           </div>
 
           {/* Two column expense list section */}
-          <div className="w-full">
+            <div className="w-full">
             <ExpenseList
               transactions={expenseData}
               onDelete={(id) => {

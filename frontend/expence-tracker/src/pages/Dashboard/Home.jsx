@@ -30,9 +30,20 @@ const Home = () => {
     
     try {
       const response = await axiosInstance.get(`${API_PATHS.DASHBOARD.GET_DATA}`);
-      // console.log("📥 API response:", response.data);
+      console.log("📥 API response:", response.data);
       if (response.data) {
-        setDashboardData(response.data);
+        // Sort recent income transactions by date in descending order
+        const sortedRecentIncome = response.data.last60DaysIncome?.transactions
+          ? [...response.data.last60DaysIncome.transactions].sort((a, b) => new Date(b.date) - new Date(a.date))
+          : [];
+
+        setDashboardData({
+          ...response.data,
+          last60DaysIncome: {
+            ...response.data.last60DaysIncome,
+            transactions: sortedRecentIncome
+          }
+        });
       }
     } catch (error) {
       console.error('❌ Error fetching dashboard data:', error);
@@ -46,7 +57,7 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    // console.log('📊 dashboardData updated:', dashboardData);
+    console.log('📊 dashboardData updated:', dashboardData);
   }, [dashboardData]);
 
   const totalIncome = dashboardData?.last60DaysIncome?.total 
