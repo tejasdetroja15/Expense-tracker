@@ -24,6 +24,7 @@ const Income = () => {
     data: null
   });
   const [openAddIncomeModel, setOpenAddIncomeModel] = useState(false);
+  const [editingIncome, setEditingIncome] = useState(null);
 
   // Get All Income details
   const fetchIncomeDetails = async () => {
@@ -79,6 +80,43 @@ const Income = () => {
     }
   };
 
+  // Handle Update Income
+  const handleUpdateIncome = async (updatedIncome) => {
+    const { _id, source, amount, date, icon } = updatedIncome;
+
+    //Check validation
+    if(!source.trim()){
+      toast.error("Source is required");
+      return;
+    }
+
+    if(!amount || isNaN(amount) || Number(amount) <= 0){
+      toast.error("Invalid Amount");
+      return;
+    }
+
+    if(!date){
+      toast.error("Date is required");
+      return;
+    }
+
+    try {
+      await axiosInstance.put(`${API_PATHS.INCOME.UPDATE_INCOME(_id)}`, {
+        source,
+        amount,
+        date,
+        icon: icon || null
+      });
+      setOpenAddIncomeModel(false);
+      setEditingIncome(null);
+      toast.success("Income Updated Successfully");
+      fetchIncomeDetails();
+    } catch(error) {
+      console.error("Error updating income:", error.response?.data?.message || error.message);
+      toast.error("Failed to update income. Please try again.");
+    }
+  };
+
   // Handle Voice Command
   const handleVoiceCommand = async (commandData) => {
     try {
@@ -106,6 +144,12 @@ const Income = () => {
       console.error("Error processing voice command:", error);
       toast.error("Failed to process voice command. Please try again.");
     }
+  };
+
+  // Handle Edit Income (for microphone added incomes)
+  const handleEditIncome = (income) => {
+    setEditingIncome(income);
+    setOpenAddIncomeModel(true);
   };
 
   //Delete Income
@@ -154,37 +198,48 @@ const Income = () => {
 
   return (
     <DashboardLayout activeMenu="Income">
-      <div className='my-5 mx-auto'>
-        <div className='grid grid-cols-1 gap-6'>
-          <div className='flex justify-between items-center mb-4'>
-            <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+      <div className='my-5 w-full'>
+          <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center'>
+            <h1 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2 sm:mb-0`}>
               Income Dashboard
             </h1>
             <VoiceCommandButton onCommand={handleVoiceCommand} type="income" />
           </div>
+          <p className={`text-sm mt-2 mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>
+            Try saying: "add income <span className="font-semibold">(amount)</span> as <span className="font-semibold">(source)</span>"
+          </p>
 
-          <div className=''>
+        <div className="mt-6 w-full">
             <IncomeOverview
               transactions={incomeData}
               onAddIncome={() => setOpenAddIncomeModel(true)}
             />
           </div>
 
+        <div className="mt-8">
           <IncomList
             transactions={incomeData}
             onDelete={(id) => {
               setOpenDeleteAlert({ show: true, data: id });
             }}
             onDownload={handleDownloadIncomeDetails}
+            onEdit={handleEditIncome}
           />
         </div>
 
         <Modal
           isOpen={openAddIncomeModel}
-          onClose={() => setOpenAddIncomeModel(false)}
-          title="Add Income"
+          onClose={() => {
+            setOpenAddIncomeModel(false);
+            setEditingIncome(null);
+          }}
+          title={editingIncome ? "Edit Income" : "Add Income"}
         >
-          <AddIncomeForm onAddIncome={handleAddIncome}/>
+          <AddIncomeForm 
+            onAddIncome={editingIncome ? handleUpdateIncome : handleAddIncome}
+            initialData={editingIncome}
+            isEditing={!!editingIncome}
+          />
         </Modal>
 
         <Modal 

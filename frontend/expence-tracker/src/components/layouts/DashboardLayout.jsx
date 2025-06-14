@@ -18,7 +18,7 @@ const DashboardLayout = ({ children, activeMenu }) => {
             <SideMenu activeMenu={activeMenu} />
           </div>
 
-          <div className={`flex-1 p-5 overflow-auto ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <div className={`flex-1 min-w-0 px-4 sm:px-6 md:px-8 lg:px-16 py-5 overflow-auto ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {children}
           </div>
         </div>

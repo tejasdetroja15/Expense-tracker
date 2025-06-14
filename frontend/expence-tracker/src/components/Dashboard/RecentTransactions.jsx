@@ -5,7 +5,7 @@ import TransactionInfoCard from "../Cards/TransactionInfoCard"; // assuming it's
 import { ThemeContext } from '../../context/ThemeContext';
 
 const RecentTransactions = ({ transactions, onSeeMore }) => { 
-    console.log("RecentTransactions", transactions);
+    // console.log("RecentTransactions", transactions);
     const { darkMode } = useContext(ThemeContext);
     
   return (

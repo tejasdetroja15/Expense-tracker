@@ -42,6 +42,36 @@ exports.getAllIncome = async (req, res) => {
         }
 }
 
+// Update Income Source
+exports.updateIncome = async (req, res) => {
+    const userId = req.user.id;
+    const incomeId = req.params.id; // Get ID from URL parameter
+    const { source, amount, date, icon } = req.body; // Get updated data from request body
+
+    try {
+        // Basic validation
+        if (!source || !amount || !date) {
+            return res.status(400).json({ msg: "Please fill in all fields" });
+        }
+
+        // Find and update the income
+        const updatedIncome = await Income.findOneAndUpdate(
+            { _id: incomeId, userId: userId }, // Find by ID and userId to ensure ownership
+            { source, amount, date: new Date(date), icon: icon || null }, // Update fields
+            { new: true, runValidators: true } // Return the updated document and run schema validators
+        );
+
+        if (!updatedIncome) {
+            return res.status(404).json({ msg: "Income not found or unauthorized" });
+        }
+
+        res.json({ msg: "Income updated successfully", income: updatedIncome });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ msg: "Server Error" });
+    }
+};
+
 // Delete Income Source
 exports.deleteIncome = async (req, res) => {
     const userId = req.user.id;

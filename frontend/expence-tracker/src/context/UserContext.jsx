@@ -22,7 +22,7 @@ const UserProvider = ({ children }) => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
-            console.log('User data from localStorage:', parsedUser);
+            // console.log('User data from localStorage:', parsedUser);
             setUser(parsedUser);
         }
     }, []);

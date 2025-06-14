@@ -26,7 +26,7 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 const CustomPieChart = ({ data, label, totalAmount, colors }) => {
-  console.log("📦 Legend Data:", data);
+  // console.log("📦 Legend Data:", data);
   
   // Ensure we have valid data
   const validData = Array.isArray(data) ? data.filter(item => item && typeof item.amount !== 'undefined') : [];

@@ -22,6 +22,7 @@ export const API_PATHS = {
       ADD_INCOME: `${BASE_URL}/api/v1/income/add`,
       GET_ALL_INCOME: `${BASE_URL}/api/v1/income/get`,
       DELETE_INCOME: (incomeId) => `${BASE_URL}/api/v1/income/${incomeId}`,
+      UPDATE_INCOME: (incomeId) => `${BASE_URL}/api/v1/income/${incomeId}`,
       DOWNLOAD_INCOME: `${BASE_URL}/api/v1/income/downloadexcel`,
     },
   
@@ -29,6 +30,7 @@ export const API_PATHS = {
       ADD_EXPENSE: `${BASE_URL}/api/v1/expense/add`,
       GET_ALL_EXPENSE: `${BASE_URL}/api/v1/expense/get`,
       DELETE_EXPENSE: (expenseId) => `${BASE_URL}/api/v1/expense/${expenseId}`,
+      UPDATE_EXPENSE: (expenseId) => `${BASE_URL}/api/v1/expense/${expenseId}`,
       DOWNLOAD_EXPENSE: `${BASE_URL}/api/v1/expense/downloadexcel`,
     },
   

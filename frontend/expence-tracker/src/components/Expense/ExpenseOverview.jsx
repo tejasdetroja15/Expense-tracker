@@ -15,7 +15,7 @@ const ExpenseOverview = ({ transactions, onExpenseIncome }) => {
   }, [transactions]);
 
   return (
-    <div className="card">
+    <div className="card w-full border-2 border-green-500">
       <div className="flex items-center justify-between">
         <div>
           <h5 className={`text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>Expense Overview</h5>
@@ -29,7 +29,7 @@ const ExpenseOverview = ({ transactions, onExpenseIncome }) => {
         </button>
       </div>
 
-      <div className="mt-10">
+      <div className="mt-6">
         <CustomLineChart data={chartData} />
       </div>
     </div>

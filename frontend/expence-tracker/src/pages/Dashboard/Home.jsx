@@ -30,7 +30,7 @@ const Home = () => {
     
     try {
       const response = await axiosInstance.get(`${API_PATHS.DASHBOARD.GET_DATA}`);
-      console.log("📥 API response:", response.data);
+      // console.log("📥 API response:", response.data);
       if (response.data) {
         setDashboardData(response.data);
       }
@@ -46,7 +46,7 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    console.log('📊 dashboardData updated:', dashboardData);
+    // console.log('📊 dashboardData updated:', dashboardData);
   }, [dashboardData]);
 
   const totalIncome = dashboardData?.last60DaysIncome?.total 
@@ -100,7 +100,7 @@ const Home = () => {
     
             <FinanceOverview
               totalBalance={dashboardData?.totalBalance || 0}
-              totalIncome={dashboardData?.totalIncome || 0}
+              totalIncome={totalIncome}
               totalExpense={dashboardData?.totalExpenses || 0}
               darkMode={darkMode}
             />

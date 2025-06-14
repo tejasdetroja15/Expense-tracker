@@ -36,29 +36,63 @@ exports.getAllExpense = async (req, res) => {
     try {
         const expense = await Expense.find({ userId }).sort({ date: -1 });
         res.json(expense);
-        } catch (err) {
-            console.error(err.message);
-            res.status(500).json({ msg: "Server Error" });
-        }
-}
-
-// Delete Expense category
-exports.deleteExpense = async (req, res) => {
-    const userId = req.user.id;
-    try{
-        await Expense.findByIdAndDelete(req.params.id);
-        res.json({msg: "Expense deleted successfully"});
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ msg: "Server Error" });
     }
-}
+};
+
+// Update Expense
+exports.updateExpense = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const { category, amount, date, icon } = req.body;
+
+        // Validate required fields
+        if (!date || !category || !amount) {
+            return res.status(400).json({ msg: "Please fill in all fields" });
+        }
+
+        // Find and update the expense
+        const updatedExpense = await Expense.findOneAndUpdate(
+            { _id: req.params.id, userId },
+            {
+                category,
+                amount,
+                date: new Date(date),
+                icon: icon || "default-icon"
+            },
+            { new: true }
+        );
+
+        if (!updatedExpense) {
+            return res.status(404).json({ msg: "Expense not found" });
+        }
+
+        res.json({ msg: "Expense updated successfully", expense: updatedExpense });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ msg: "Server Error" });
+    }
+};
+
+// Delete Expense category
+exports.deleteExpense = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        await Expense.findByIdAndDelete(req.params.id);
+        res.json({ msg: "Expense deleted successfully" });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ msg: "Server Error" });
+    }
+};
 
 // Download Expense Excel
 exports.downloadExpenseExcel = async (req, res) => {
     const userId = req.user.id;
 
-    try{
+    try {
         const expense = await Expense.find({ userId }).sort({ date: -1 });
         
         //prepare data for Excel
@@ -83,5 +117,5 @@ exports.downloadExpenseExcel = async (req, res) => {
         console.error(err.message);
         res.status(500).json({ msg: "Server Error" });
     }
-}
+};
 

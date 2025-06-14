@@ -1,34 +1,35 @@
-import React, { useContext } from "react";
-import { LuDownload } from "react-icons/lu";
-import TransactionInfoCard from "../Cards/TransactionInfoCard";
-import moment from "moment";
-import { ThemeContext } from "../../context/ThemeContext";
+import React from 'react';
+import { LuDownload } from 'react-icons/lu';
+import TransactionInfoCard from '../Cards/TransactionInfoCard';
 
-const ExpenseList = ({transactions, onDelete, onDownload}) => { 
-  const { darkMode } = useContext(ThemeContext);
-  
-  return ( 
-    <div className="card"> 
-      <div className="flex items-center justify-between"> 
-        <h5 className={`text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>All Expenses</h5> 
-        <button className="card-btn" onClick={onDownload}> 
-          <LuDownload className="text-base" /> Download 
-        </button> 
-      </div> 
-      <div className="grid grid-cols-1 md:grid-cols-2 "> 
-        {transactions?.map((expense) => ( 
-          <TransactionInfoCard 
-            key={expense._id} 
-            title={expense.category} 
-            icon={expense.icon} 
-            date={moment(expense.date).format("Do MMM YYYY")} 
-            amount={expense.amount} 
-            type="expense" 
-            onDelete={() => onDelete(expense._id)} 
-          /> 
-        ))} 
-      </div> 
-    </div> 
+const ExpenseList = ({ transactions, onDelete, onDownload, onEdit }) => {
+  return (
+    <div className="bg-white rounded-lg p-6 w-full">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-semibold text-gray-800">Recent Expenses</h2>
+        <button
+          onClick={onDownload}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+        >
+          <LuDownload size={20} />
+          <span>Download</span>
+        </button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {transactions.map((transaction) => (
+          <TransactionInfoCard
+            key={transaction._id}
+            title={transaction.category}
+            icon={transaction.icon}
+            date={new Date(transaction.date).toLocaleDateString()}
+            amount={transaction.amount}
+            type="expense"
+            onDelete={() => onDelete(transaction._id)}
+            onEdit={onEdit ? () => onEdit(transaction) : undefined}
+          />
+        ))}
+      </div>
+    </div>
   );
 };
 

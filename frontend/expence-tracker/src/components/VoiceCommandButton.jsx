@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useState } from "react";
+import React, { useEffect, useContext, useRef, useState } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { ThemeContext } from "../context/ThemeContext";
 import { toast } from "react-toastify";
@@ -14,10 +14,10 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
   } = useSpeechRecognition();
 
   const { darkMode } = useContext(ThemeContext);
-  const [lastRecognizedText, setLastRecognizedText] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState(null);
+  const isProcessingRef = useRef(false); // Prevent multiple triggers
+  const silenceTimeoutIdRef = useRef(null); // Optional timeout
 
   useEffect(() => {
     if (!browserSupportsSpeechRecognition) {
@@ -26,117 +26,119 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
   }, [browserSupportsSpeechRecognition]);
 
   useEffect(() => {
-    if (finalTranscript && !isProcessing) {
-      console.log("Final transcript:", finalTranscript);
-      setLastRecognizedText(finalTranscript);
-      setIsProcessing(true);
-      
+    if (finalTranscript && isListening && !isProcessingRef.current) {
+      isProcessingRef.current = true;
+      SpeechRecognition.stopListening();
+      setIsListening(false);
+
       const command = finalTranscript.toLowerCase();
       let parsedData = null;
 
-      if (type === "expense") {
-        parsedData = parseExpenseCommand(command);
-      } else {
-        parsedData = parseIncomeCommand(command);
+      try {
+        if (type === "expense") {
+          parsedData = parseExpenseCommand(command);
+        } else {
+          parsedData = parseIncomeCommand(command);
+        }
+      } catch (e) {
+        console.error("Parsing error:", e.message);
+        toast.error(`Error parsing command: ${e.message}`);
+        resetTranscript();
+        isProcessingRef.current = false;
+        return;
       }
 
       if (parsedData) {
-        console.log("Parsed command data:", parsedData);
         onCommand({ ...parsedData, isVoiceCommand: true });
         toast.success(`${type === "expense" ? "Expense" : "Income"} added via voice command!`);
-        resetTranscript();
       } else {
-        console.log("Could not parse command:", command);
         toast.error("Could not understand the command. Please try again.");
       }
-      
-      setIsProcessing(false);
+
+      resetTranscript();
+
+      // Release lock after a short delay
+      setTimeout(() => {
+        isProcessingRef.current = false;
+      }, 1000);
     }
-  }, [finalTranscript, onCommand, resetTranscript, type, isProcessing]);
+  }, [finalTranscript, isListening, onCommand, resetTranscript, type]);
 
   const parseExpenseCommand = (command) => {
-    // Match patterns like "add expense 100 for category" or "add expense 100 category"
-    const match = command.match(/add expense (\d+)(?:\s+for\s+|\s+)(\w+)/i);
-    if (match) {
-      const amount = parseFloat(match[1]);
-      const category = match[2].toLowerCase();
-      
-      // Clean up category by removing articles and extra spaces
-      const cleanCategory = category
-        .replace(/^(a|an|the)\s+/i, '') // Remove articles
-        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-        .trim();
-      
-      return {
-        amount,
-        category: cleanCategory,
-        date: new Date().toISOString().split('T')[0]
-      };
+    const lowerCommand = command.replace(/rupees|dollars|euro/i, '').trim();
+    const amountMatch = lowerCommand.match(/\b(\d+(\.\d+)?)\b/);
+    if (!amountMatch) throw new Error('Could not find amount in command');
+    const amount = parseFloat(amountMatch[1]);
+
+    let category = 'Other';
+    const prepositions = ['for', 'on', 'at', 'in', 'to', 'as'];
+    const commandWithoutAmount = lowerCommand.replace(amountMatch[0], '').trim();
+
+    for (const prep of prepositions) {
+      const parts = commandWithoutAmount.split(prep);
+      if (parts.length > 1) {
+        const potentialCategory = parts[1].trim().replace(/^(a|an|the)\s+/i, '');
+        if (potentialCategory && !/^\d+(\.\d+)?$/.test(potentialCategory)) {
+          category = potentialCategory;
+          break;
+        }
+      }
     }
-    return null;
+
+    return { type: 'expense', amount, category, date: new Date().toISOString() };
   };
 
   const parseIncomeCommand = (command) => {
-    const lowerCommand = command.toLowerCase();
-    const amountMatch = command.match(/\d+(\.\d+)?/);
-    const amount = amountMatch ? parseFloat(amountMatch[0]) : null;
+    const lowerCommand = command.replace(/rupees|dollars|euro|rs|inr/i, '').trim();
+    const amountMatch = lowerCommand.match(/\b(\d+(\.\d+)?)\b/);
+    if (!amountMatch) throw new Error('Could not find amount in command');
+    const amount = parseFloat(amountMatch[1]);
 
-    if (!amount) {
-      throw new Error('Could not find amount in command');
-    }
-
-    // Extract source using various prepositions
     let source = 'Other';
-    const prepositions = ['from', 'as', 'by', 'for', 'through'];
-    
+    const prepositions = ['from', 'as', 'by', 'for', 'through', 'received', 'got', 'earned'];
+    const commandWithoutAmount = lowerCommand.replace(amountMatch[0], '').trim();
+
     for (const prep of prepositions) {
-      const parts = lowerCommand.split(prep);
+      const parts = commandWithoutAmount.split(prep);
       if (parts.length > 1) {
-        // Get the part after the preposition and clean it up
-        const potentialSource = parts[1]
-          .trim()
-          .replace(/^(a|an|the)\s+/i, '') // Remove articles
-          .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-          .trim();
-        
-        if (potentialSource) {
+        const potentialSource = parts[1].trim().replace(/^(a|an|the)\s+/i, '');
+        if (potentialSource && !/^\d+(\.\d+)?$/.test(potentialSource)) {
           source = potentialSource;
           break;
         }
       }
     }
 
-    return {
-      type: 'income',
-      amount,
-      source,
-      date: new Date().toISOString()
-    };
-  };
-
-  const startListening = () => {
-    if (!browserSupportsSpeechRecognition) {
-      toast.error("Your browser doesn't support speech recognition. Please use Chrome or Edge.");
-      return;
+    if (source === 'Other') {
+      const words = commandWithoutAmount.split(/\s+/);
+      for (const word of words) {
+        if (word && !/^\d+(\.\d+)?$/.test(word) && !prepositions.includes(word)) {
+          source = word;
+          break;
+        }
+      }
     }
-    resetTranscript();
-    SpeechRecognition.startListening({ 
-      continuous: true,
-      language: 'en-US'
-    });
-  };
 
-  const stopListening = () => {
-    SpeechRecognition.stopListening();
+    return { type: 'income', amount, source, date: new Date().toISOString() };
   };
 
   const toggleListening = () => {
     if (isListening) {
-      stopListening();
+      SpeechRecognition.stopListening();
+      setIsListening(false);
+      clearTimeout(silenceTimeoutIdRef.current);
     } else {
-      startListening();
+      resetTranscript();
+      isProcessingRef.current = false;
+      setIsListening(true);
+      SpeechRecognition.startListening({ continuous: false, language: 'en-US' });
+
+      // Optional: stop listening after 5 seconds if no speech
+      silenceTimeoutIdRef.current = setTimeout(() => {
+        SpeechRecognition.stopListening();
+        setIsListening(false);
+      }, 5000);
     }
-    setIsListening(!isListening);
   };
 
   if (error) {
@@ -147,20 +149,19 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
     <div className="flex flex-col items-center gap-2">
       <button
         onClick={toggleListening}
-        className={`p-3 rounded-full ${
-          isListening ? 'bg-red-500' : 'bg-blue-500'
-        } text-white hover:opacity-90 transition-all`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${isListening ? 'bg-red-600' : 'bg-purple-600'} text-white hover:opacity-90`}
         title={isListening ? 'Stop listening' : 'Start voice command'}
       >
-        {isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
+        <span className="text-xl">
+          {isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
+        </span>
+        <span>{isListening ? "Stop Listening" : "Voice Command"}</span>
       </button>
-      {isListening && (
-        <div className="text-sm text-gray-600">
-          Listening... {transcript && <span className="font-medium">{transcript}</span>}
-        </div>
-      )}
+      <div className={`text-sm text-gray-600 min-h-5 transition-all ${isListening ? 'visible' : 'invisible'}`}>
+        Listening... {transcript && <span className="font-medium">{transcript}</span>}
+      </div>
     </div>
   );
 };
 
-export default VoiceCommandButton; 
+export default VoiceCommandButton;
