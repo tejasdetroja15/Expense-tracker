@@ -7,9 +7,9 @@ const session = require("express-session");
 const passport = require("./config/passport");
 connectDB = require("./config/db");
 const authRoutes = require("./routes/AuthRoutes");
-const incomeRoutes = require("./routes/incomeRoutes");
-const expenseRoutes = require("./routes/expenseRoutes");
-const dashboardRoutes = require("./routes/dashboardRoutes");
+const incomeRoutes = require("./routes/IncomeRoutes");
+const expenseRoutes = require("./routes/ExpenseRoutes");
+const dashboardRoutes = require("./routes/DashboardRoutes");
 
 const app = express();
 
