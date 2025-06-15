@@ -1,27 +1,27 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../../context/UserContext';
 import { SIDE_MENU_DATA } from '../../../utils/data';
 import CharAvatar from '../Cards/CharAvatar';
+import LogoutAlert from '../LogoutAlert';
 
 const Sidemenu = ({ activeMenu }) => {
   const { user, clearUser } = useContext(UserContext);
   const navigate = useNavigate();
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
 
   const handleClick = (route) => {
     if (route === '/logout') {
-      handleLogout();
+      setShowLogoutAlert(true);
       return;
     }
     navigate(route);
   };
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      localStorage.clear();
-      clearUser();
-      navigate('/login');
-    }
+    localStorage.clear();
+    clearUser();
+    navigate('/login');
   };
 
   return (
@@ -52,19 +52,50 @@ const Sidemenu = ({ activeMenu }) => {
       <div className="space-y-2">
         {SIDE_MENU_DATA.map((item, index) => (
           <button
-            key={`menu_${index}`}
-            className={`w-full flex items-center gap-4 text-[15px] py-3 px-5 rounded-lg transition-all duration-200 ${
-              activeMenu === item.name
-                ? "text-white bg-primary shadow-md"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
+            key={index}
             onClick={() => handleClick(item.link)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
+              activeMenu === item.link
+                ? 'bg-[#9810FA] text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
           >
             <item.icon className="text-xl" />
             <span>{item.name}</span>
           </button>
         ))}
       </div>
+
+      {/* Logout Alert Modal */}
+      {showLogoutAlert && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Logout</h3>
+              <button
+                onClick={() => setShowLogoutAlert(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <LogoutAlert onLogout={handleLogout} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
