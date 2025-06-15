@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import { useUserAuth } from '../../hooks/useUserAuth';
-import { ThemeContext } from '../../context/ThemeContext';
 import { API_PATHS } from '../../../utils/apipath';
 import InfoCard from '../../components/Cards/InfoCard';
 import axiosInstance from '../../../utils/axiosInstance';
@@ -19,7 +18,6 @@ import RecentIncome from '../../components/Dashboard/RecentIncome';
 const Home = () => {
   useUserAuth();
   const navigate = useNavigate();
-  const { darkMode } = useContext(ThemeContext);
 
   const [dashboardData, setDashboardData] = useState();
   const [loading, setLoading] = useState(false);
@@ -71,8 +69,8 @@ const Home = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <div className="my-5 mx-auto transition-colors">
-          <h1 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+        <div className="my-5 mx-auto">
+          <h1 className="text-2xl font-bold mb-6 text-gray-800">
             Financial Dashboard
           </h1>
           
@@ -82,7 +80,6 @@ const Home = () => {
               label="Total Balance"
               value={addThousandsSeparator(dashboardData?.totalBalance || 0)}
               color="bg-blue-600"
-              darkMode={darkMode}
             /> 
 
             <InfoCard
@@ -90,7 +87,6 @@ const Home = () => {
               label="Total Income"
               value={addThousandsSeparator(totalIncome)}
               color="bg-green-600"
-              darkMode={darkMode}
             />
 
             <InfoCard
@@ -98,7 +94,6 @@ const Home = () => {
               label="Total Expense"
               value={addThousandsSeparator(dashboardData?.totalExpenses || 0)}
               color="bg-red-600"
-              darkMode={darkMode}
             />
           </div>
 
@@ -106,37 +101,31 @@ const Home = () => {
             <RecentTransactions
               transactions={dashboardData?.recentTransactions} 
               onSeeMore={() => navigate('/expense')}
-              darkMode={darkMode}
             />
     
             <FinanceOverview
               totalBalance={dashboardData?.totalBalance || 0}
               totalIncome={totalIncome}
               totalExpense={dashboardData?.totalExpenses || 0}
-              darkMode={darkMode}
             />
 
             <ExpenseTranscations
               transactions={dashboardData?.last30DaysExpenses?.transactions || []} 
               onSeeMore={() => navigate('/expense')}
-              darkMode={darkMode}
             />
 
             <Last30DaysExpenses
               data={dashboardData?.last30DaysExpenses?.transactions || []}
-              darkMode={darkMode}
             />
 
             <RecentIncomeWithChart
               data={dashboardData?.last60DaysIncome?.transactions?.slice(0,4) || []}
               totalIncome={totalIncome}
-              darkMode={darkMode}
             />
 
             <RecentIncome
               transactions={dashboardData?.last60DaysIncome?.transactions || []}
               onSeeMore={() => navigate('/income')}
-              darkMode={darkMode}
             />
           </div>
         </div>

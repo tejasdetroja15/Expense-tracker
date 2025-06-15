@@ -1,15 +1,13 @@
 import React, { useContext } from "react";
 import { UserContext } from "../../context/UserContext";
-import { ThemeContext } from "../../context/ThemeContext";
 import Navbar from "./Navbar";
 import SideMenu from "./Sidemenu";
 
 const DashboardLayout = ({ children, activeMenu }) => {
   const { user } = useContext(UserContext);
-  const { darkMode } = useContext(ThemeContext);
 
   return (
-    <div className={`min-h-screen flex flex-col ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
+    <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
       <Navbar activeMenu={activeMenu} />
 
       {user && (
@@ -18,7 +16,7 @@ const DashboardLayout = ({ children, activeMenu }) => {
             <SideMenu activeMenu={activeMenu} />
           </div>
 
-          <div className={`flex-1 min-w-0 px-4 sm:px-6 md:px-8 lg:px-16 py-5 overflow-auto ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+          <div className="flex-1 min-w-0 px-4 sm:px-6 md:px-8 lg:px-16 py-5 overflow-auto bg-gray-50">
             {children}
           </div>
         </div>

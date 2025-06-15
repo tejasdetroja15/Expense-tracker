@@ -1,4 +1,4 @@
-import { React , useState , useEffect, useContext} from 'react'
+import { React , useState , useEffect } from 'react'
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import { useUserAuth } from '../../hooks/useUserAuth';
 import axiosInstance from '../../../utils/axiosInstance';
@@ -10,15 +10,11 @@ import AddExpenseForm from '../../components/Expense/AddExpenseForm';
 import ExpenseList from '../../components/Expense/ExpenseList';
 import DeleteAlert from '../../components/DeleteAlert';
 import VoiceCommandButton from '../../components/VoiceCommandButton';
-import { ThemeContext } from '../../context/ThemeContext';
 
 const Expense = () => {
-
   useUserAuth();
-  const { darkMode } = useContext(ThemeContext);
 
   const [expenseData , setExpenseData] = useState([]);
-  // eslint-disable-next-line no-unused-vars
   const [loading , setLoading] = useState(false)
   const [ openDeleteAlert , setOpenDeleteAlert] = useState({
     show: false,
@@ -140,7 +136,6 @@ const Expense = () => {
     }
   };
 
-
   // Handle downloadExpense details
   const handleDownloadExpenseDetails = async () => {
     try {
@@ -197,27 +192,23 @@ const Expense = () => {
 
   useEffect(() => {
     fetchExpenseDetails();
-
-    return() => {};
   },[]);
 
   return (
     <DashboardLayout activeMenu="Expense">
         <div className='my-5 w-full'>
           <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4'>
-            <h1 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2 sm:mb-0`}>
+            <h1 className='text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-0'>
               Expense Dashboard
             </h1>
-            {/* Wrap VoiceCommandButton and message in a column flex container for vertical stacking */}
             <div className="flex flex-col items-end w-full sm:w-auto mt-4 sm:mt-0">
               <VoiceCommandButton onCommand={handleVoiceCommand} type="expense" />
-              <p className={`text-sm mt-2 mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}> {/* Adjusted mb */}
+              <p className="text-sm mt-2 mb-2 text-purple-600">
                 Try saying: "add expense <span className="font-semibold">(amount)</span> as <span className="font-semibold">(category)</span>"
               </p>
             </div>
           </div>
 
-          {/* Full width graph section */}
           <div className="w-full mb-8">
             <ExpenseOverview
               transactions={expenseData}
@@ -225,8 +216,7 @@ const Expense = () => {
             />
           </div>
 
-          {/* Two column expense list section */}
-            <div className="w-full">
+          <div className="w-full">
             <ExpenseList
               transactions={expenseData}
               onDelete={(id) => {

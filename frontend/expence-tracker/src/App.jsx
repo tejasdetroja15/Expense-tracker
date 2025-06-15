@@ -12,11 +12,9 @@ import GoogleCallback from './pages/Auth/GoogleCallback'
 import ProtectedRoute from './components/ProtectedRoute'
 import UserProvider from './context/UserContext'
 import { Toaster } from "react-hot-toast"
-import { ThemeProvider } from './context/ThemeContext';
 
 const App = () => {
   return (
-    <ThemeProvider> 
     <UserProvider>  
       <div>
         <Router>
@@ -58,7 +56,6 @@ const App = () => {
         }}
         />
     </UserProvider>
-  </ThemeProvider>
   )
 }
 

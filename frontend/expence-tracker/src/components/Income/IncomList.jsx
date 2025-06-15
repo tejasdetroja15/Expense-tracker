@@ -1,16 +1,13 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { LuDownload } from 'react-icons/lu';
 import TransactionInfoCard from '../Cards/TransactionInfoCard';
 import moment from 'moment';
-import { ThemeContext } from '../../context/ThemeContext';
 
 const IncomeList = ({ transactions, onDelete, onDownload, onEdit }) => {
-  const { darkMode } = useContext(ThemeContext);
-  
   return (
     <div className="card w-full border-2 border-green-500">
       <div className="flex items-center justify-between">
-        <h5 className={`text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>Income Sources</h5>
+        <h5 className="text-lg text-gray-800">Income Sources</h5>
         <button className="card-btn" onClick={onDownload}>
           <LuDownload className="text-base" /> Download
         </button>

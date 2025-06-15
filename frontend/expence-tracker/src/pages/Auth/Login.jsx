@@ -115,7 +115,7 @@ const Login = () => {
                 value={email}
                 onChange={({ target }) => setEmail(target.value)}
                 label="Email Address"
-                placeholder="john@example.com"
+                placeholder="Enter your email address"
                 type="email"
               />
             </div>
@@ -163,7 +163,8 @@ const Login = () => {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-[#9810FA] hover:bg-[#8609e0] text-white font-medium py-3 px-4 rounded-md transition duration-300 ease-in-out uppercase disabled:opacity-50"
+              className="w-full bg-[#9810FA] hover:bg-[#8609e0] text-white font-medium py-3 px-4 rounded-md uppercase transition duration-300 ease-in-out 
+                        hover:shadow-lg hover:scale-[1.02] active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
@@ -177,15 +178,17 @@ const Login = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-md transition duration-300 ease-in-out hover:bg-gray-50 disabled:opacity-50"
-            >
-              <FcGoogle className="text-xl" />
-              Google
-            </button>
+         <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-md transition duration-300 ease-in-out 
+                      hover:bg-gray-100 hover:shadow-md hover:scale-[1.02] hover:text-black disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FcGoogle className="text-xl" />
+            Continue with Google
+          </button>
+
             
             <div className="text-center">
               <p className="text-sm text-gray-600">

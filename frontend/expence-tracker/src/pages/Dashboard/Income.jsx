@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react'
+import React, { useEffect, useState } from 'react'
 import DashboardLayout from '../../components/layouts/DashboardLayout'
 import axiosInstance from '../../../utils/axiosInstance';
 import { API_PATHS } from '../../../utils/apipath';
@@ -10,14 +10,11 @@ import IncomList from '../../components/Income/IncomList';
 import DeleteAlert from '../../components/DeleteAlert';
 import { useUserAuth } from '../../hooks/useUserAuth';
 import VoiceCommandButton from '../../components/VoiceCommandButton';
-import { ThemeContext } from '../../context/ThemeContext';
 
 const Income = () => {
   useUserAuth();
-  const { darkMode } = useContext(ThemeContext);
 
   const [incomeData, setIncomeData] = useState([]);
-  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(false);
   const [openDeleteAlert, setOpenDeleteAlert] = useState({
     show: false,
@@ -192,22 +189,21 @@ const Income = () => {
       toast.error("Failed to download Income details. Please try again.");
     }
    };
+
   useEffect(() => {
     fetchIncomeDetails();
-
-    return() => {};
   },[]);
 
   return (
     <DashboardLayout activeMenu="Income">
       <div className='my-5 w-full'>
           <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center'>
-            <h1 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2 sm:mb-0`}>
+            <h1 className='text-xl sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-0'>
               Income Dashboard
             </h1>
             <div className="flex flex-col items-end w-full sm:w-auto mt-4 sm:mt-0">
               <VoiceCommandButton onCommand={handleVoiceCommand} type="income" />
-              <p className={`text-sm mt-2 mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>
+              <p className="text-sm mt-2 mb-2 text-purple-600">
                 Try saying: "add income <span className="font-semibold">(amount)</span> as <span className="font-semibold">(source)</span>"
               </p>
             </div>

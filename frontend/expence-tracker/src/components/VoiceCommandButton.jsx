@@ -1,6 +1,5 @@
-import React, { useEffect, useContext, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { ThemeContext } from "../context/ThemeContext";
 import { toast } from "react-toastify";
 import { FaMicrophone, FaMicrophoneSlash } from 'react-icons/fa';
 
@@ -13,7 +12,6 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
     finalTranscript
   } = useSpeechRecognition();
 
-  const { darkMode } = useContext(ThemeContext);
   const [error, setError] = useState(null);
   const isProcessingRef = useRef(false);
   const silenceTimeoutIdRef = useRef(null);
@@ -175,8 +173,8 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
         </span>
         <span>{listening ? "Stop Listening" : "Voice Command"}</span>
       </button>
-      <div className={`text-sm text-gray-600 min-h-5 transition-all ${listening ? 'visible' : 'invisible'}`}>
-        Listening... {transcript && <span className="font-medium">{transcript}</span>}
+      <div className="text-sm text-gray-600 min-h-5 transition-all">
+        {listening && <span>Listening... {transcript && <span className="font-medium">{transcript}</span>}</span>}
       </div>
     </div>
   );
