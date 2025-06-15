@@ -9,7 +9,7 @@ connectDB = require("./config/db");
 const authRoutes = require("./routes/AuthRoutes");
 const incomeRoutes = require("./routes/IncomeRoutes");
 const expenseRoutes = require("./routes/ExpenseRoutes");
-const dashboardRoutes = require("./routes/DashboardRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const app = express();
 
