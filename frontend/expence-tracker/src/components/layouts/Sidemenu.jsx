@@ -54,11 +54,11 @@ const Sidemenu = ({ activeMenu }) => {
           <button
             key={index}
             onClick={() => handleClick(item.link)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
-              activeMenu === item.link
-                ? 'bg-[#9810FA] text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-md transition-colors font-medium
+              ${activeMenu === item.link
+                ? 'bg-purple-900 text-white'
+                : 'text-black-700 hover:bg-purple-100 hover:text-black-800'}
+            `}
           >
             <item.icon className="text-xl" />
             <span>{item.name}</span>
