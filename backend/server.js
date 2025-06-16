@@ -15,7 +15,7 @@ const app = express();
 
 // Middleware to hande CORS 
 app.use(cors({
-    origin: process.env.CLIENT_URL, // This can be a full URL
+    origin: process.env.CLIENT_URL || "*", // This can be a full URL
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
@@ -29,9 +29,11 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'your_session_secret',
     resave: false,
     saveUninitialized: false,
+    store: new session.MemoryStore(), // This is fine for development, but should be replaced with a proper store in production
     cookie: {
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'lax'
     }
 }));
 
@@ -64,6 +66,15 @@ if (process.env.NODE_ENV === 'production') {
 //serve upload foldder
 // app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use('/uploads', express.static('uploads'));
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ 
+        message: 'Something went wrong!',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
