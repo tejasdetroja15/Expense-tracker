@@ -14,13 +14,11 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const app = express();
 
 // Middleware to hande CORS 
-app.use(
-    cors({
-        origin: process.env.CLIENT_URL || "*",
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        allowedHeaders: ["Content-Type", "Authorization"]
-    })
-);
+app.use(cors({
+    origin: process.env.CLIENT_URL, // This can be a full URL
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 // Removed duplicate app.use(cors());
 app.use(express.json());
