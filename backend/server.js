@@ -22,7 +22,7 @@ app.use(
     })
 );
 
-app.use(cors());
+// Removed duplicate app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -48,7 +48,6 @@ mongoose.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true 
 })
 
-
 // Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/income", incomeRoutes);
@@ -67,7 +66,6 @@ if (process.env.NODE_ENV === 'production') {
 //serve upload foldder
 // app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use('/uploads', express.static('uploads'));
-
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
