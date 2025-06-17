@@ -14,7 +14,6 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const app = express();
 
-// Middleware to handle CORS 
 app.use(cors({
   origin: process.env.CLIENT_URL || "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
@@ -24,12 +23,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your_session_secret',
   resave: false,
   saveUninitialized: false,
-  store: new session.MemoryStore(),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000,
@@ -37,11 +34,7 @@ app.use(session({
   }
 }));
 
-// Initialize Passport
 app.use(passport.initialize());
-app.use(passport.session());
-
-// Connect to MongoDB
 connectDB();
 
 // Routes
@@ -50,19 +43,16 @@ app.use("/api/v1/income", incomeRoutes);
 app.use("/api/v1/expense", expenseRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 
-// Serve frontend static files in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/expense-tracker/dist'))); // <-- fix folder name if needed
+  app.use(express.static(path.join(__dirname, '../frontend/expense-tracker/dist')));
 
   app.get('*', (req, res) => {
     res.sendFile(path.resolve(__dirname, '../frontend/expense-tracker/dist', 'index.html'));
   });
 }
 
-// Serve uploads folder
 app.use('/uploads', express.static('uploads'));
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -73,5 +63,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Hello World! Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
