@@ -7,10 +7,10 @@ const {protect} = require("../middlewares/AuthMiddleware");
 const router = express.Router();
 
 
-router.post("/add",protect, addExpense);
-router.get("/get",protect, getAllExpense);
+router.post("/add", protect, addExpense);
+router.get("/get", protect, getAllExpense);
 router.put("/:id", protect, updateExpense);
-router.delete("/:id",protect, deleteExpense);
-router.get("/downloadexcel",protect, downloadExpenseExcel);
+router.delete("/:id", protect, deleteExpense);
+router.get("/downloadexcel", protect, downloadExpenseExcel);
 
 module.exports = router;
