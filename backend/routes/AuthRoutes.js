@@ -12,7 +12,7 @@ const {
     googleCallback 
 } = require("../controllers/authController");
 const { upload } = require("../middlewares/uploadMiddleware");
-const passport = require("../config/passport");
+const passport = require("passport");
 const router = express.Router();
 
 router.post("/register", registerUser);
