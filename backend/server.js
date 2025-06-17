@@ -43,13 +43,13 @@ app.use("/api/v1/income", incomeRoutes);
 app.use("/api/v1/expense", expenseRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/expense-tracker/dist')));
+// if (process.env.NODE_ENV === 'production') {
+//   app.use(express.static(path.join(__dirname, '../frontend/expense-tracker/dist')));
 
-  app.get('/{*any}', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend/expense-tracker/dist', 'index.html'));
-  });
-}
+//   app.get('/{*any}', (req, res) => {
+//     res.sendFile(path.resolve(__dirname, '../frontend/expense-tracker/dist', 'index.html'));
+//   });
+// }
 
 app.use('/uploads', express.static('uploads'));
 
