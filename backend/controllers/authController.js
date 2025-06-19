@@ -103,7 +103,6 @@ exports.verifyEmail = async (req, res) => {
     }
 };
 
-
 exports.resendOTP = async (req, res) => {
     const { email } = req.body;
 
@@ -289,6 +288,7 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
+// === Modified googleCallback with proper encoding and logging ===
 exports.googleCallback = async (req, res) => {
   try {
     console.log('User data in callback:', JSON.stringify(req.user, null, 2));
@@ -331,6 +331,7 @@ exports.googleCallback = async (req, res) => {
       profileImageUrl: user.profileImageUrl,
     };
 
+    // Properly encode userData as a URI component before adding to URL
     const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
     console.log('Redirecting to:', redirectUrl);
 
