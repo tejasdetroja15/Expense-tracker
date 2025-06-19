@@ -1,10 +1,9 @@
-const XLSX = require("xlsx");
+const ExcelJS = require('exceljs');
 const Expense = require("../models/Expense");
 
 
-// Add Expense category
 exports.addExpense = async (req, res) => {
-    console.log("Request body:", req.body); // Debugging log
+    console.log("Request body:", req.body); 
     const userId = req.user.id;
 
     try {
@@ -30,7 +29,6 @@ exports.addExpense = async (req, res) => {
     }
 };
 
-// Get All Expense categorys
 exports.getAllExpense = async (req, res) => {
     const userId = req.user.id;
     try {
@@ -42,18 +40,15 @@ exports.getAllExpense = async (req, res) => {
     }
 };
 
-// Update Expense
 exports.updateExpense = async (req, res) => {
     const userId = req.user.id;
     try {
         const { category, amount, date, icon } = req.body;
 
-        // Validate required fields
         if (!date || !category || !amount) {
             return res.status(400).json({ msg: "Please fill in all fields" });
         }
 
-        // Find and update the expense
         const updatedExpense = await Expense.findOneAndUpdate(
             { _id: req.params.id, userId },
             {
@@ -76,7 +71,6 @@ exports.updateExpense = async (req, res) => {
     }
 };
 
-// Delete Expense category
 exports.deleteExpense = async (req, res) => {
     const userId = req.user.id;
     try {
@@ -88,31 +82,50 @@ exports.deleteExpense = async (req, res) => {
     }
 };
 
-// Download Expense Excel
 exports.downloadExpenseExcel = async (req, res) => {
     const userId = req.user.id;
 
     try {
         const expense = await Expense.find({ userId }).sort({ date: -1 });
-        
-        //prepare data for Excel
-        const data = expense.map((item) => ({
-            category: item.category,
-            Amount: item.amount,
-            Date: item.date.toLocaleDateString(),
-        }));
 
-        //create Excel file
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "Expense");
-        XLSX.writeFile(wb, "Expense_Details.xlsx");
-        res.download("Expense_Details.xlsx", (err) => {
-            if (err) {
-                console.error(err);
-                res.status(500).send("Error downloading file");
-            }
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Expense');
+
+        worksheet.columns = [
+            { header: 'Category', key: 'category', width: 20 },
+            { header: 'Amount', key: 'amount', width: 15 },
+            { header: 'Date', key: 'date', width: 15 }
+        ];
+        worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF4F81BD' }
+        };
+
+        expense.forEach(item => {
+            worksheet.addRow({
+                category: item.category,
+                amount: item.amount,
+                date: item.date.toLocaleDateString()
+            });
         });
+
+        worksheet.eachRow({ includeEmpty: false }, function(row) {
+            row.eachCell({ includeEmpty: false }, function(cell) {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=Expense_Details.xlsx');
+        await workbook.xlsx.write(res);
+        res.end();
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ msg: "Server Error" });

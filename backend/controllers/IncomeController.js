@@ -1,10 +1,9 @@
-const XLSX = require("xlsx");
+const ExcelJS = require('exceljs');
 const Income = require("../models/Income");
 
 
-// Add Income Source
 exports.addIncome = async (req, res) => {
-    console.log("Received Data:", req.body);  // Check if req.body is received
+    console.log("Received Data:", req.body);  
     const userId = req.user.id;
 
     try {
@@ -30,7 +29,6 @@ exports.addIncome = async (req, res) => {
     }
 };
 
-// Get All Income Sources
 exports.getAllIncome = async (req, res) => {
     const userId = req.user.id;
     try {
@@ -42,23 +40,20 @@ exports.getAllIncome = async (req, res) => {
         }
 }
 
-// Update Income Source
 exports.updateIncome = async (req, res) => {
     const userId = req.user.id;
-    const incomeId = req.params.id; // Get ID from URL parameter
-    const { source, amount, date, icon } = req.body; // Get updated data from request body
+    const incomeId = req.params.id; 
+    const { source, amount, date, icon } = req.body; 
 
     try {
-        // Basic validation
         if (!source || !amount || !date) {
             return res.status(400).json({ msg: "Please fill in all fields" });
         }
 
-        // Find and update the income
         const updatedIncome = await Income.findOneAndUpdate(
-            { _id: incomeId, userId: userId }, // Find by ID and userId to ensure ownership
-            { source, amount, date: new Date(date), icon: icon || null }, // Update fields
-            { new: true, runValidators: true } // Return the updated document and run schema validators
+            { _id: incomeId, userId: userId }, 
+            { source, amount, date: new Date(date), icon: icon || null }, 
+            { new: true, runValidators: true } 
         );
 
         if (!updatedIncome) {
@@ -72,7 +67,6 @@ exports.updateIncome = async (req, res) => {
     }
 };
 
-// Delete Income Source
 exports.deleteIncome = async (req, res) => {
     const userId = req.user.id;
     try{
@@ -84,34 +78,53 @@ exports.deleteIncome = async (req, res) => {
     }
 }
 
-// Download Income Excel
 exports.downloadIncomeExcel = async (req, res) => {
     const userId = req.user.id;
 
-    try{
+    try {
         const income = await Income.find({ userId }).sort({ date: -1 });
-        
-        //prepare data for Excel
-        const data = income.map((item) => ({
-            Source: item.source,
-            Amount: item.amount,
-            Date: item.date.toLocaleDateString(),
-        }));
 
-        //create Excel file
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "Income");
-        XLSX.writeFile(wb, "Income_Details.xlsx");
-        res.download("Income_Details.xlsx", (err) => {
-            if (err) {
-                console.error(err);
-                res.status(500).send("Error downloading file");
-            }
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Income');
+
+        worksheet.columns = [
+            { header: 'Source', key: 'source', width: 20 },
+            { header: 'Amount', key: 'amount', width: 15 },
+            { header: 'Date', key: 'date', width: 15 }
+        ];
+        worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF4F81BD' }
+        };
+
+        income.forEach(item => {
+            worksheet.addRow({
+                source: item.source,
+                amount: item.amount,
+                date: item.date.toLocaleDateString()
+            });
         });
+
+        worksheet.eachRow({ includeEmpty: false }, function(row) {
+            row.eachCell({ includeEmpty: false }, function(cell) {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=Income_Details.xlsx');
+        await workbook.xlsx.write(res);
+        res.end();
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ msg: "Server Error" });
     }
-}
+};
 

@@ -4,7 +4,6 @@ const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emai
 const { generateOTP, generateResetToken, hashToken } = require('../utils/tokenUtils');
 const passport = require('passport');
 
-//Generate JWT Token
 const generateToken = (id) => {
     const secretKey = process.env.JWT_SECRET;
     
@@ -13,7 +12,6 @@ const generateToken = (id) => {
         throw new Error("JWT_SECRET environment variable is not set");
     }
     
-    // console.log("JWT_SECRET length in authController:", secretKey.length);
     return jwt.sign({ id }, secretKey, { expiresIn: '30d' });
 };
 
@@ -127,14 +125,12 @@ exports.resendOTP = async (req, res) => {
         // Generate new OTP
         const otp = generateOTP();
         const otpExpiry = new Date();
-        otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // OTP expires in 10 minutes
+        otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); 
 
-        // Update user with new OTP
         user.emailVerificationToken = otp;
         user.emailVerificationExpires = otpExpiry;
         await user.save();
 
-        // Send verification email
         const emailSent = await sendVerificationEmail(email, otp);
         if (!emailSent) {
             return res.status(500).json({ message: "Failed to send verification email" });
@@ -153,22 +149,18 @@ exports.loginUser = async (req, res) => {
         return res.status(400).json({ message: "Please fill all the fields" });
     }
     try {
-        // console.time("Login Process");
         const user = await User.findOne({ email });
-        // console.timeEnd("Login Process");
 
         if (!user) {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
         const isPasswordMatch = await user.comparePassword(password);
-        // console.log("Password Match:", isPasswordMatch);
 
         if (!isPasswordMatch) {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
-        // Check if email is verified
         if (!user.isEmailVerified) {
             return res.status(403).json({ 
                 message: "Email not verified", 
@@ -206,17 +198,14 @@ exports.forgotPassword = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Generate OTP for password reset
         const otp = generateOTP();
         const otpExpiry = new Date();
-        otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // OTP expires in 10 minutes
+        otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); 
 
-        // Save OTP to user
         user.resetPasswordToken = otp;
         user.resetPasswordExpires = otpExpiry;
         await user.save();
 
-        // Send password reset OTP email
         const emailSent = await sendPasswordResetEmail(email, otp);
         if (!emailSent) {
             return res.status(500).json({ message: "Failed to send password reset OTP" });
@@ -250,7 +239,6 @@ exports.verifyResetOTP = async (req, res) => {
             return res.status(400).json({ message: "Invalid or expired OTP" });
         }
 
-        // Generate temporary token for password reset
         const resetToken = generateResetToken();
         user.resetPasswordToken = resetToken;
         await user.save();
@@ -286,7 +274,6 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ message: "Invalid or expired reset token" });
         }
 
-        // Update password
         user.password = newPassword;
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
@@ -347,7 +334,6 @@ exports.googleCallback = async (req, res) => {
     const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
     console.log('Redirecting to:', redirectUrl);
 
-    // Redirect to frontend with token and user data
     res.redirect(redirectUrl);
   } catch (error) {
     console.error("Google OAuth error:", error);
@@ -355,7 +341,6 @@ exports.googleCallback = async (req, res) => {
   }
 };
 
-//get user info
 exports.getUserInfo = async (req, res) => {
     try{
         const user = await User.findById(req.user._id).select("-password");
