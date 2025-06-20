@@ -291,9 +291,6 @@ exports.resetPassword = async (req, res) => {
 // === Modified googleCallback with proper encoding and logging ===
 exports.googleCallback = async (req, res) => {
   try {
-    console.log('User data in callback:', JSON.stringify(req.user, null, 2));
-    console.log('Profile picture URL:', req.user.photos?.[0]?.value);
-
     if (!req.user) {
       console.error("Google OAuth error: req.user is undefined");
       return res.redirect(`${process.env.FRONTEND_URL}/login?error=Authentication failed`);
@@ -314,24 +311,29 @@ exports.googleCallback = async (req, res) => {
         user = await User.create({
           fullName: req.user.displayName,
           email: req.user.emails[0].value,
-          password: Math.random().toString(36).slice(-8), 
-          profileImageUrl: req.user.photos && req.user.photos[0] ? req.user.photos[0].value : null,
+          password: Math.random().toString(36).slice(-8),
+          profileImageUrl: req.user.photos?.[0]?.value || `${process.env.BACKEND_URL}/uploads/default.jpg`,
           googleId: req.user.id,
-          isEmailVerified: true, 
+          isEmailVerified: true,
         });
       }
     }
 
     const token = generateToken(user._id);
 
+    // Replace any localhost profileImageUrl with production backend URL
+    let profileImageUrl = user.profileImageUrl;
+    if (profileImageUrl && profileImageUrl.includes("localhost")) {
+      profileImageUrl = profileImageUrl.replace("http://localhost:8000", process.env.BACKEND_URL);
+    }
+
     const userData = {
       _id: user._id,
       fullName: user.fullName,
       email: user.email,
-      profileImageUrl: user.profileImageUrl,
+      profileImageUrl,
     };
 
-    // Properly encode userData as a URI component before adding to URL
     const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
     console.log('Redirecting to:', redirectUrl);
 
@@ -341,6 +343,7 @@ exports.googleCallback = async (req, res) => {
     res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(error.message)}`);
   }
 };
+
 
 exports.getUserInfo = async (req, res) => {
     try{
@@ -352,5 +355,5 @@ exports.getUserInfo = async (req, res) => {
     }catch (error) {
         console.error("Error fetching user info:", error);
         res.status(500).json({ message: "Server error", error: error.message });
-    }
+    }   
 };
