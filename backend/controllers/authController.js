@@ -288,63 +288,59 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-// === Modified googleCallback with proper encoding and logging ===
 exports.googleCallback = async (req, res) => {
-  try {
-    if (!req.user) {
-      console.error("Google OAuth error: req.user is undefined");
-      return res.redirect(`${process.env.FRONTEND_URL}/login?error=Authentication failed`);
-    }
-
-    let user = await User.findOne({ googleId: req.user.id });
-
-    if (!user) {
-      user = await User.findOne({ email: req.user.emails[0].value });
-
-      if (user) {
-        user.googleId = req.user.id;
-        if (req.user.photos && req.user.photos[0] && !user.profileImageUrl) {
-          user.profileImageUrl = req.user.photos[0].value;
-        }
-        await user.save();
-      } else {
-        user = await User.create({
-          fullName: req.user.displayName,
-          email: req.user.emails[0].value,
-          password: Math.random().toString(36).slice(-8),
-          profileImageUrl: req.user.photos?.[0]?.value || `${process.env.BACKEND_URL}/uploads/default.jpg`,
-          googleId: req.user.id,
-          isEmailVerified: true,
-        });
+    try {
+      console.log('User data in callback:', JSON.stringify(req.user, null, 2));
+      console.log('Profile picture URL:', req.user.photos?.[0]?.value);
+  
+      if (!req.user) {
+        console.error("Google OAuth error: req.user is undefined");
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=Authentication failed`);
       }
+  
+      let user = await User.findOne({ googleId: req.user.id });
+  
+      if (!user) {
+        user = await User.findOne({ email: req.user.emails[0].value });
+  
+        if (user) {
+          user.googleId = req.user.id;
+          if (req.user.photos && req.user.photos[0] && !user.profileImageUrl) {
+            user.profileImageUrl = req.user.photos[0].value;
+          }
+          await user.save();
+        } else {
+          user = await User.create({
+            fullName: req.user.displayName,
+            email: req.user.emails[0].value,
+            password: Math.random().toString(36).slice(-8), 
+            profileImageUrl: req.user.photos && req.user.photos[0] ? req.user.photos[0].value : null,
+            googleId: req.user.id,
+            isEmailVerified: true, 
+          });
+        }
+      }
+  
+      const token = generateToken(user._id);
+  
+      const userData = {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        profileImageUrl: user.profileImageUrl,
+      };
+  
+      // Properly encode userData as a URI component before adding to URL
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
+      console.log('Redirecting to:', redirectUrl);
+  
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error("Google OAuth error:", error);
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(error.message)}`);
     }
-
-    const token = generateToken(user._id);
-
-    // Replace any localhost profileImageUrl with production backend URL
-    let profileImageUrl = user.profileImageUrl;
-    if (profileImageUrl && profileImageUrl.includes("localhost")) {
-      profileImageUrl = profileImageUrl.replace("http://localhost:8000", process.env.BACKEND_URL);
-    }
-
-    const userData = {
-      _id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      profileImageUrl,
-    };
-
-    const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
-    console.log('Redirecting to:', redirectUrl);
-
-    res.redirect(redirectUrl);
-  } catch (error) {
-    console.error("Google OAuth error:", error);
-    res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(error.message)}`);
-  }
-};
-
-
+  };
+  
 exports.getUserInfo = async (req, res) => {
     try{
         const user = await User.findById(req.user._id).select("-password");
