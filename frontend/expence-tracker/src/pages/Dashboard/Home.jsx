@@ -58,7 +58,8 @@ const Home = () => {
     console.log('📊 dashboardData updated:', dashboardData);
   }, [dashboardData]);
 
-  const totalIncome = dashboardData?.last60DaysIncome?.total 
+  const allTimeTotalIncome = dashboardData?.totalIncome || 0;
+  const last60DaysTotalIncome = dashboardData?.last60DaysIncome?.total 
     ? Number(dashboardData.last60DaysIncome.total) 
     : 0;
   
@@ -85,7 +86,7 @@ const Home = () => {
             <InfoCard
               icon={<IoMdCard size={24} />}
               label="Total Income"
-              value={addThousandsSeparator(totalIncome)}
+              value={addThousandsSeparator(allTimeTotalIncome)}
               color="bg-green-600"
             />
 
@@ -105,7 +106,7 @@ const Home = () => {
     
             <FinanceOverview
               totalBalance={dashboardData?.totalBalance || 0}
-              totalIncome={totalIncome}
+              totalIncome={allTimeTotalIncome}
               totalExpense={dashboardData?.totalExpenses || 0}
             />
 
@@ -120,7 +121,7 @@ const Home = () => {
 
             <RecentIncomeWithChart
               data={dashboardData?.last60DaysIncome?.transactions?.slice(0,4) || []}
-              totalIncome={totalIncome}
+              totalIncome={last60DaysTotalIncome}
             />
 
             <RecentIncome

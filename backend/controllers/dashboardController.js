@@ -27,13 +27,15 @@ exports.getDashboardData = async (req, res) => {
         console.log("💸 Total Expense:", totalExpense);
 
         const last60DaysIncomeTransactions = await Income.find({
-            userId: userIdObject
+            userId: userIdObject,
+            date: { $gte: sixtyDaysAgo }
         }).sort({ date: -1 });
 
         const incomeLast60Days = last60DaysIncomeTransactions.reduce((sum, txn) => sum + txn.amount, 0);
-s
+
         const last30DaysExpenseTransactions = await Expense.find({
-            userId: userIdObject
+            userId: userIdObject,
+            date: { $gte: thirtyDaysAgo }
         }).sort({ date: -1 });
 
         const expenseLast30Days = last30DaysExpenseTransactions.reduce((sum, txn) => sum + txn.amount, 0);
@@ -47,6 +49,7 @@ s
         ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5); // Optional slice to limit to 5
 
         res.json({
+            totalIncome,
             totalBalance: totalIncome - totalExpense,
             totalExpenses: totalExpense,
             last30DaysExpenses: {
