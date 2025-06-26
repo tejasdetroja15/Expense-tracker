@@ -18,7 +18,13 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
 
   useEffect(() => {
     if (!browserSupportsSpeechRecognition) {
-      setError('Your browser does not support speech recognition. Please use Chrome or Edge.');
+      // setError('Your browser does not support speech recognition. Please use Chrome or Edge.');
+      return (
+        <div className="text-red-500">
+          Your browser does not support speech recognition.<br/>
+          Please use <b>Chrome</b> or <b>Edge</b> over <b>HTTPS</b>.
+        </div>
+      );
     }
   }, [browserSupportsSpeechRecognition]);
 
