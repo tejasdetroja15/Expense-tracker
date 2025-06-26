@@ -16,25 +16,21 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
   const isProcessingRef = useRef(false);
   const silenceTimeoutIdRef = useRef(null);
 
+  // ✅ Cleanup silence timeout on unmount
+  useEffect(() => {
+    return () => clearTimeout(silenceTimeoutIdRef.current);
+  }, []);
+
+  // ✅ Debug or notification if browser unsupported (but no JSX returned here)
   useEffect(() => {
     if (!browserSupportsSpeechRecognition) {
-      // setError('Your browser does not support speech recognition. Please use Chrome or Edge.');
-      return (
-        <div className="text-red-500">
-          Your browser does not support speech recognition.<br/>
-          Please use <b>Chrome</b> or <b>Edge</b> over <b>HTTPS</b>.
-        </div>
-      );
+      console.warn("Speech recognition is not supported in this browser.");
     }
   }, [browserSupportsSpeechRecognition]);
 
+  // ✅ Core logic for handling voice input result
   useEffect(() => {
-    console.log('VoiceCommandButton - Primary useEffect (finalTranscript, listening): ', {
-      finalTranscript, listening, isProcessing: isProcessingRef.current, transcript
-    });
-
     if (finalTranscript && !isProcessingRef.current) {
-      console.log('VoiceCommandButton - Final transcript received. Setting isProcessingRef.current = true.');
       isProcessingRef.current = true;
       clearTimeout(silenceTimeoutIdRef.current);
       SpeechRecognition.stopListening();
@@ -43,17 +39,14 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
       let parsedData = null;
 
       try {
-        if (type === "expense") {
-          parsedData = parseExpenseCommand(command);
-        } else {
-          parsedData = parseIncomeCommand(command);
-        }
+        parsedData = type === "expense"
+          ? parseExpenseCommand(command)
+          : parseIncomeCommand(command);
       } catch (e) {
         console.error("VoiceCommandButton - Parsing error:", e.message);
         toast.error(`Error parsing command: ${e.message}`);
       } finally {
         resetTranscript();
-        console.log('VoiceCommandButton - Releasing processing lock after command: Setting isProcessingRef.current = false');
         isProcessingRef.current = false;
       }
 
@@ -66,21 +59,35 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
     }
   }, [finalTranscript, onCommand, resetTranscript, type]);
 
+  // ✅ Cleanup when listening stops unexpectedly
   useEffect(() => {
-    console.log('VoiceCommandButton - Dedicated Cleanup useEffect (listening): ', {
-      listening, isProcessing: isProcessingRef.current, transcript
-    });
-
     if (!listening && isProcessingRef.current) {
-      console.log('VoiceCommandButton - Cleanup: Listening stopped and processing ref is stuck. Forcing reset.');
       isProcessingRef.current = false;
       clearTimeout(silenceTimeoutIdRef.current);
       resetTranscript();
-    } else if (!listening && !isProcessingRef.current && transcript.length > 0) {
-      console.log('VoiceCommandButton - Cleanup: Listening stopped, no processing, but transcript lingering. Resetting transcript.');
+    } else if (!listening && transcript.length > 0 && !isProcessingRef.current) {
       resetTranscript();
     }
   }, [listening, resetTranscript, transcript]);
+
+  const toggleListening = () => {
+    if (listening) {
+      SpeechRecognition.stopListening();
+      clearTimeout(silenceTimeoutIdRef.current);
+      isProcessingRef.current = false;
+      resetTranscript();
+    } else {
+      resetTranscript();
+      isProcessingRef.current = false;
+      SpeechRecognition.startListening({ continuous: false, language: 'en-US' });
+
+      silenceTimeoutIdRef.current = setTimeout(() => {
+        SpeechRecognition.stopListening();
+        isProcessingRef.current = false;
+        resetTranscript();
+      }, 5000);
+    }
+  };
 
   const parseExpenseCommand = (command) => {
     const lowerCommand = command.replace(/rupees|dollars|euro/i, '').trim();
@@ -140,31 +147,14 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
     return { type: 'income', amount, source, date: new Date().toISOString() };
   };
 
-  const toggleListening = () => {
-    console.log('VoiceCommandButton - toggleListening called. Current listening state:', listening);
-    if (listening) {
-      console.log('VoiceCommandButton - Stopping listening via toggle.');
-      SpeechRecognition.stopListening();
-      clearTimeout(silenceTimeoutIdRef.current);
-      isProcessingRef.current = false;
-      resetTranscript();
-    } else {
-      console.log('VoiceCommandButton - Starting listening via toggle.');
-      resetTranscript();
-      isProcessingRef.current = false;
-      SpeechRecognition.startListening({ continuous: false, language: 'en-US' });
-
-      silenceTimeoutIdRef.current = setTimeout(() => {
-        console.log('VoiceCommandButton - Silence timeout triggered. Forcing stop listening.');
-        SpeechRecognition.stopListening();
-        isProcessingRef.current = false;
-        resetTranscript();
-      }, 5000);
-    }
-  };
-
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
+  // ✅ Show message if unsupported browser
+  if (!browserSupportsSpeechRecognition) {
+    return (
+      <div className="text-red-500">
+        Your browser does not support speech recognition.<br />
+        Please use <b>Chrome</b> or <b>Edge</b> over <b>HTTPS</b>.
+      </div>
+    );
   }
 
   return (
@@ -180,7 +170,7 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
         <span>{listening ? "Stop Listening" : "Voice Command"}</span>
       </button>
       <div className="text-sm text-gray-600 min-h-5 transition-all">
-        {listening && <span>Listening... {transcript && <span className="font-medium">{transcript}</span>}</span>}
+        {listening && <span>Listening... <span className="font-medium">{transcript}</span></span>}
       </div>
     </div>
   );
