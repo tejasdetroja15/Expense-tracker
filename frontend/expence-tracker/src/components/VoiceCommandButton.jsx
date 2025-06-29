@@ -1,23 +1,87 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FaMicrophone, FaMicrophoneSlash } from 'react-icons/fa';
 
-// Mock SpeechRecognition for demonstration
-const mockSpeechRecognition = {
-  startListening: (options) => {
-    console.log('Starting speech recognition with options:', options);
-  },
-  stopListening: () => {
-    console.log('Stopping speech recognition');
-  }
-};
+// Real Speech Recognition Implementation
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-const useMockSpeechRecognition = () => ({
-  transcript: '',
-  listening: false,
-  resetTranscript: () => console.log('Resetting transcript'),
-  browserSupportsSpeechRecognition: true,
-  finalTranscript: ''
-});
+const useSpeechRecognition = () => {
+  const [transcript, setTranscript] = useState('');
+  const [finalTranscript, setFinalTranscript] = useState('');
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+  const browserSupportsSpeechRecognition = !!SpeechRecognition;
+
+  const resetTranscript = () => {
+    setTranscript('');
+    setFinalTranscript('');
+  };
+
+  const startListening = (options = {}) => {
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = options.continuous || false;
+    recognition.interimResults = true;
+    recognition.lang = options.language || 'en-US';
+
+    recognition.onstart = () => {
+      console.log('🎤 Speech recognition started');
+      setListening(true);
+    };
+
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalText = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalText += result[0].transcript;
+        } else {
+          interimTranscript += result[0].transcript;
+        }
+      }
+
+      console.log('📝 Interim:', interimTranscript);
+      console.log('✅ Final:', finalText);
+
+      setTranscript(interimTranscript);
+      if (finalText) {
+        setFinalTranscript(finalText);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('❌ Speech recognition error:', event.error);
+      setListening(false);
+    };
+
+    recognition.onend = () => {
+      console.log('🛑 Speech recognition ended');
+      setListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+  };
+
+  return {
+    transcript,
+    finalTranscript,
+    listening,
+    resetTranscript,
+    startListening,
+    stopListening,
+    browserSupportsSpeechRecognition
+  };
+};
 
 const VoiceCommandButton = ({ onCommand = (data) => console.log('Command received:', data), type = "expense" }) => {
   const {
@@ -25,44 +89,99 @@ const VoiceCommandButton = ({ onCommand = (data) => console.log('Command receive
     listening,
     resetTranscript,
     browserSupportsSpeechRecognition,
-    finalTranscript
-  } = useMockSpeechRecognition();
+    finalTranscript,
+    startListening,
+    stopListening
+  } = useSpeechRecognition();
 
   const [error, setError] = useState(null);
-  const [isListening, setIsListening] = useState(false); // Added local state for demo
   const isProcessingRef = useRef(false);
   const silenceTimeoutIdRef = useRef(null);
-
-  // Debug function to test button click
-  const handleButtonClick = () => {
-    console.log('🎤 Button clicked!');
-    setIsListening(!isListening);
-    
-    if (isListening) {
-      console.log('Stopping listening...');
-      mockSpeechRecognition.stopListening();
-      clearTimeout(silenceTimeoutIdRef.current);
-      isProcessingRef.current = false;
-    } else {
-      console.log('Starting listening...');
-      isProcessingRef.current = false;
-      mockSpeechRecognition.startListening({ continuous: false, language: 'en-US' });
-
-      silenceTimeoutIdRef.current = setTimeout(() => {
-        console.log('Auto-stopping due to timeout');
-        mockSpeechRecognition.stopListening();
-        setIsListening(false);
-        isProcessingRef.current = false;
-      }, 5000);
-    }
-  };
 
   useEffect(() => {
     return () => clearTimeout(silenceTimeoutIdRef.current);
   }, []);
 
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition) {
+      console.warn("Speech recognition is not supported in this browser.");
+    }
+  }, [browserSupportsSpeechRecognition]);
+
+  useEffect(() => {
+    if (finalTranscript && !isProcessingRef.current) {
+      console.log('🔄 Processing final transcript:', finalTranscript);
+      isProcessingRef.current = true;
+      clearTimeout(silenceTimeoutIdRef.current);
+      stopListening();
+
+      const command = finalTranscript.toLowerCase();
+      let parsedData = null;
+
+      try {
+        parsedData = type === "expense"
+          ? parseExpenseCommand(command)
+          : parseIncomeCommand(command);
+        
+        console.log('✅ Parsed data:', parsedData);
+      } catch (e) {
+        console.error("❌ Parsing error:", e.message);
+        setError(`Error parsing command: ${e.message}`);
+      } finally {
+        resetTranscript();
+        isProcessingRef.current = false;
+      }
+
+      if (parsedData) {
+        onCommand({ ...parsedData, isVoiceCommand: true });
+        console.log(`✅ ${type === "expense" ? "Expense" : "Income"} added via voice command!`);
+      } else if (finalTranscript.length > 0) {
+        console.log("❌ Could not understand the command. Please try again.");
+        setError("Could not understand the command. Please try again.");
+      }
+    }
+  }, [finalTranscript, onCommand, resetTranscript, type, stopListening]);
+
+  useEffect(() => {
+    if (!listening && isProcessingRef.current) {
+      isProcessingRef.current = false;
+      clearTimeout(silenceTimeoutIdRef.current);
+      resetTranscript();
+    } else if (!listening && transcript.length > 0 && !isProcessingRef.current) {
+      resetTranscript();
+    }
+  }, [listening, resetTranscript, transcript]);
+
+  const toggleListening = () => {
+    console.log('🎤 Toggle listening - Current state:', listening);
+    
+    if (listening) {
+      console.log('🛑 Stopping listening...');
+      stopListening();
+      clearTimeout(silenceTimeoutIdRef.current);
+      isProcessingRef.current = false;
+      resetTranscript();
+      setError(null);
+    } else {
+      console.log('▶️ Starting listening...');
+      resetTranscript();
+      setError(null);
+      isProcessingRef.current = false;
+      startListening({ continuous: false, language: 'en-US' });
+
+      // Auto-stop after 10 seconds instead of 5
+      silenceTimeoutIdRef.current = setTimeout(() => {
+        console.log('⏰ Auto-stopping due to timeout');
+        stopListening();
+        isProcessingRef.current = false;
+        resetTranscript();
+      }, 10000);
+    }
+  };
+
   const parseExpenseCommand = (command) => {
-    const lowerCommand = command.replace(/rupees|dollars|euro/i, '').trim();
+    console.log('🔍 Parsing expense command:', command);
+    const lowerCommand = command.replace(/rupees|dollars|euro|rs|inr/i, '').trim();
     const amountMatch = lowerCommand.match(/\b(\d+(\.\d+)?)\b/);
     if (!amountMatch) throw new Error('Could not find amount in command');
     const amount = parseFloat(amountMatch[1]);
@@ -85,6 +204,41 @@ const VoiceCommandButton = ({ onCommand = (data) => console.log('Command receive
     return { type: 'expense', amount, category, date: new Date().toISOString() };
   };
 
+  const parseIncomeCommand = (command) => {
+    console.log('🔍 Parsing income command:', command);
+    const lowerCommand = command.replace(/rupees|dollars|euro|rs|inr/i, '').trim();
+    const amountMatch = lowerCommand.match(/\b(\d+(\.\d+)?)\b/);
+    if (!amountMatch) throw new Error('Could not find amount in command');
+    const amount = parseFloat(amountMatch[1]);
+
+    let source = 'Other';
+    const prepositions = ['from', 'as', 'by', 'for', 'through', 'received', 'got', 'earned'];
+    const commandWithoutAmount = lowerCommand.replace(amountMatch[0], '').trim();
+
+    for (const prep of prepositions) {
+      const parts = commandWithoutAmount.split(prep);
+      if (parts.length > 1) {
+        const potentialSource = parts[1].trim().replace(/^(a|an|the)\s+/i, '');
+        if (potentialSource && !/^\d+(\.\d+)?$/.test(potentialSource)) {
+          source = potentialSource;
+          break;
+        }
+      }
+    }
+
+    if (source === 'Other') {
+      const words = commandWithoutAmount.split(/\s+/);
+      for (const word of words) {
+        if (word && !/^\d+(\.\d+)?$/.test(word) && !prepositions.includes(word)) {
+          source = word;
+          break;
+        }
+      }
+    }
+
+    return { type: 'income', amount, source, date: new Date().toISOString() };
+  };
+
   if (!browserSupportsSpeechRecognition) {
     return (
       <div className="text-red-500 p-4 border border-red-300 rounded-lg">
@@ -95,80 +249,72 @@ const VoiceCommandButton = ({ onCommand = (data) => console.log('Command receive
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 p-6 bg-gray-50 rounded-lg">
+    <div className="flex flex-col items-center gap-4 p-6 bg-gray-50 rounded-lg max-w-md mx-auto">
       <div className="text-lg font-semibold text-gray-700">
-        Voice Command Debug Test
+        Real Voice Command Test
       </div>
       
-      {/* Debug Info */}
-      <div className="text-sm bg-blue-100 p-3 rounded border">
-        <div><strong>Button State:</strong> {isListening ? 'Listening' : 'Ready'}</div>
+      {/* Status Info */}
+      <div className="text-sm bg-blue-100 p-3 rounded border w-full">
+        <div><strong>Status:</strong> {listening ? '🎤 Listening...' : '⭕ Ready'}</div>
         <div><strong>Processing:</strong> {isProcessingRef.current ? 'Yes' : 'No'}</div>
-        <div><strong>Browser Support:</strong> {browserSupportsSpeechRecognition ? 'Yes' : 'No'}</div>
+        <div><strong>Browser Support:</strong> {browserSupportsSpeechRecognition ? '✅ Yes' : '❌ No'}</div>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="text-red-600 bg-red-100 p-3 rounded border w-full text-sm">
+          ❌ {error}
+        </div>
+      )}
+
       <button
-        onClick={handleButtonClick}
-        onMouseEnter={() => console.log('Mouse entered button')}
-        onMouseLeave={() => console.log('Mouse left button')}
+        onClick={toggleListening}
         className={`
           flex items-center gap-3 px-6 py-3 rounded-lg font-medium text-white
           transition-all duration-200 transform hover:scale-105 active:scale-95
-          ${isListening 
-            ? 'bg-red-600 hover:bg-red-700 shadow-red-200' 
-            : 'bg-purple-600 hover:bg-purple-700 shadow-purple-200'
+          ${listening 
+            ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
+            : 'bg-purple-600 hover:bg-purple-700'
           }
           shadow-lg hover:shadow-xl
           focus:outline-none focus:ring-4 focus:ring-purple-300
           cursor-pointer
         `}
         style={{ 
-          minWidth: '180px',
-          minHeight: '50px',
-          zIndex: 10,
-          position: 'relative'
+          minWidth: '200px',
+          minHeight: '60px'
         }}
-        title={isListening ? 'Click to stop listening' : 'Click to start voice command'}
+        title={listening ? 'Click to stop listening' : 'Click to start voice command'}
       >
         <span className="text-xl">
-          {isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
+          {listening ? <FaMicrophoneSlash /> : <FaMicrophone />}
         </span>
-        <span>{isListening ? "Stop Listening" : "Voice Command"}</span>
+        <span>{listening ? "Stop Listening" : "Start Voice Command"}</span>
       </button>
 
-      <div className="text-sm text-gray-600 min-h-6 text-center">
-        {isListening ? (
-          <span className="text-green-600 font-medium">
-            🎤 Listening... Click button to stop
-          </span>
-        ) : (
-          <span>Click the button above to test voice commands</span>
+      {/* Live Transcript */}
+      <div className="w-full min-h-16 p-3 bg-white border rounded text-sm">
+        <div className="font-medium text-gray-600 mb-1">Live Transcript:</div>
+        {listening && (
+          <div className="text-gray-800">
+            <span className="text-blue-600">{transcript}</span>
+            {transcript && <span className="animate-pulse">|</span>}
+          </div>
+        )}
+        {finalTranscript && (
+          <div className="text-green-600 font-medium mt-2">
+            Final: "{finalTranscript}"
+          </div>
+        )}
+        {!listening && !transcript && !finalTranscript && (
+          <div className="text-gray-400 italic">
+            Click the button and speak: "I spent 50 rupees on coffee" or "I earned 100 dollars from freelancing"
+          </div>
         )}
       </div>
 
-      {/* Test buttons for debugging */}
-      <div className="flex gap-2 mt-4">
-        <button
-          onClick={() => console.log('Test button 1 clicked')}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          Test Click 1
-        </button>
-        <button
-          onClick={() => console.log('Test button 2 clicked')}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Test Click 2
-        </button>
-      </div>
-
-      <div className="text-xs text-gray-500 mt-4 text-center max-w-md">
-        <strong>Debug Instructions:</strong><br />
-        1. Open browser console (F12)<br />
-        2. Click the voice command button<br />
-        3. Check console for click events<br />
-        4. Try the test buttons below if main button doesn't work
-      </div>
+     
     </div>
   );
 };
