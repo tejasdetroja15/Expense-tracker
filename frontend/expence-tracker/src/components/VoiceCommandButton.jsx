@@ -250,16 +250,6 @@ const VoiceCommandButton = ({ onCommand = (data) => console.log('Command receive
 
   return (
     <div className="flex flex-col items-center gap-4 p-6 bg-gray-50 rounded-lg max-w-md mx-auto">
-      <div className="text-lg font-semibold text-gray-700">
-        Real Voice Command Test
-      </div>
-      
-      {/* Status Info */}
-      <div className="text-sm bg-blue-100 p-3 rounded border w-full">
-        <div><strong>Status:</strong> {listening ? '🎤 Listening...' : '⭕ Ready'}</div>
-        <div><strong>Processing:</strong> {isProcessingRef.current ? 'Yes' : 'No'}</div>
-        <div><strong>Browser Support:</strong> {browserSupportsSpeechRecognition ? '✅ Yes' : '❌ No'}</div>
-      </div>
 
       {/* Error Display */}
       {error && (
