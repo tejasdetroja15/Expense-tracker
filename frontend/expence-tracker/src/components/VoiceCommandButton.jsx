@@ -1,93 +1,65 @@
 import React, { useEffect, useRef, useState } from "react";
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { toast } from "react-toastify";
 import { FaMicrophone, FaMicrophoneSlash } from 'react-icons/fa';
 
-const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
+// Mock SpeechRecognition for demonstration
+const mockSpeechRecognition = {
+  startListening: (options) => {
+    console.log('Starting speech recognition with options:', options);
+  },
+  stopListening: () => {
+    console.log('Stopping speech recognition');
+  }
+};
+
+const useMockSpeechRecognition = () => ({
+  transcript: '',
+  listening: false,
+  resetTranscript: () => console.log('Resetting transcript'),
+  browserSupportsSpeechRecognition: true,
+  finalTranscript: ''
+});
+
+const VoiceCommandButton = ({ onCommand = (data) => console.log('Command received:', data), type = "expense" }) => {
   const {
     transcript,
     listening,
     resetTranscript,
     browserSupportsSpeechRecognition,
     finalTranscript
-  } = useSpeechRecognition();
+  } = useMockSpeechRecognition();
 
   const [error, setError] = useState(null);
+  const [isListening, setIsListening] = useState(false); // Added local state for demo
   const isProcessingRef = useRef(false);
   const silenceTimeoutIdRef = useRef(null);
 
-  // ✅ Cleanup silence timeout on unmount
-  useEffect(() => {
-    return () => clearTimeout(silenceTimeoutIdRef.current);
-  }, []);
-
-  // ✅ Debug or notification if browser unsupported (but no JSX returned here)
-  useEffect(() => {
-    if (!browserSupportsSpeechRecognition) {
-      console.warn("Speech recognition is not supported in this browser.");
-    }
-  }, [browserSupportsSpeechRecognition]);
-
-  // ✅ Core logic for handling voice input result
-  useEffect(() => {
-    if (finalTranscript && !isProcessingRef.current) {
-      isProcessingRef.current = true;
-      clearTimeout(silenceTimeoutIdRef.current);
-      SpeechRecognition.stopListening();
-
-      const command = finalTranscript.toLowerCase();
-      let parsedData = null;
-
-      try {
-        parsedData = type === "expense"
-          ? parseExpenseCommand(command)
-          : parseIncomeCommand(command);
-      } catch (e) {
-        console.error("VoiceCommandButton - Parsing error:", e.message);
-        toast.error(`Error parsing command: ${e.message}`);
-      } finally {
-        resetTranscript();
-        isProcessingRef.current = false;
-      }
-
-      if (parsedData) {
-        onCommand({ ...parsedData, isVoiceCommand: true });
-        toast.success(`${type === "expense" ? "Expense" : "Income"} added via voice command!`);
-      } else if (finalTranscript.length > 0) {
-        toast.error("Could not understand the command. Please try again.");
-      }
-    }
-  }, [finalTranscript, onCommand, resetTranscript, type]);
-
-  // ✅ Cleanup when listening stops unexpectedly
-  useEffect(() => {
-    if (!listening && isProcessingRef.current) {
-      isProcessingRef.current = false;
-      clearTimeout(silenceTimeoutIdRef.current);
-      resetTranscript();
-    } else if (!listening && transcript.length > 0 && !isProcessingRef.current) {
-      resetTranscript();
-    }
-  }, [listening, resetTranscript, transcript]);
-
-  const toggleListening = () => {
-    if (listening) {
-      SpeechRecognition.stopListening();
+  // Debug function to test button click
+  const handleButtonClick = () => {
+    console.log('🎤 Button clicked!');
+    setIsListening(!isListening);
+    
+    if (isListening) {
+      console.log('Stopping listening...');
+      mockSpeechRecognition.stopListening();
       clearTimeout(silenceTimeoutIdRef.current);
       isProcessingRef.current = false;
-      resetTranscript();
     } else {
-      resetTranscript();
+      console.log('Starting listening...');
       isProcessingRef.current = false;
-      SpeechRecognition.startListening({ continuous: false, language: 'en-US' });
+      mockSpeechRecognition.startListening({ continuous: false, language: 'en-US' });
 
       silenceTimeoutIdRef.current = setTimeout(() => {
-        SpeechRecognition.stopListening();
+        console.log('Auto-stopping due to timeout');
+        mockSpeechRecognition.stopListening();
+        setIsListening(false);
         isProcessingRef.current = false;
-        resetTranscript();
       }, 5000);
     }
   };
+
+  useEffect(() => {
+    return () => clearTimeout(silenceTimeoutIdRef.current);
+  }, []);
 
   const parseExpenseCommand = (command) => {
     const lowerCommand = command.replace(/rupees|dollars|euro/i, '').trim();
@@ -113,44 +85,9 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
     return { type: 'expense', amount, category, date: new Date().toISOString() };
   };
 
-  const parseIncomeCommand = (command) => {
-    const lowerCommand = command.replace(/rupees|dollars|euro|rs|inr/i, '').trim();
-    const amountMatch = lowerCommand.match(/\b(\d+(\.\d+)?)\b/);
-    if (!amountMatch) throw new Error('Could not find amount in command');
-    const amount = parseFloat(amountMatch[1]);
-
-    let source = 'Other';
-    const prepositions = ['from', 'as', 'by', 'for', 'through', 'received', 'got', 'earned'];
-    const commandWithoutAmount = lowerCommand.replace(amountMatch[0], '').trim();
-
-    for (const prep of prepositions) {
-      const parts = commandWithoutAmount.split(prep);
-      if (parts.length > 1) {
-        const potentialSource = parts[1].trim().replace(/^(a|an|the)\s+/i, '');
-        if (potentialSource && !/^\d+(\.\d+)?$/.test(potentialSource)) {
-          source = potentialSource;
-          break;
-        }
-      }
-    }
-
-    if (source === 'Other') {
-      const words = commandWithoutAmount.split(/\s+/);
-      for (const word of words) {
-        if (word && !/^\d+(\.\d+)?$/.test(word) && !prepositions.includes(word)) {
-          source = word;
-          break;
-        }
-      }
-    }
-
-    return { type: 'income', amount, source, date: new Date().toISOString() };
-  };
-
-  // ✅ Show message if unsupported browser
   if (!browserSupportsSpeechRecognition) {
     return (
-      <div className="text-red-500">
+      <div className="text-red-500 p-4 border border-red-300 rounded-lg">
         Your browser does not support speech recognition.<br />
         Please use <b>Chrome</b> or <b>Edge</b> over <b>HTTPS</b>.
       </div>
@@ -158,19 +95,79 @@ const VoiceCommandButton = ({ onCommand, type = "expense" }) => {
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-4 p-6 bg-gray-50 rounded-lg">
+      <div className="text-lg font-semibold text-gray-700">
+        Voice Command Debug Test
+      </div>
+      
+      {/* Debug Info */}
+      <div className="text-sm bg-blue-100 p-3 rounded border">
+        <div><strong>Button State:</strong> {isListening ? 'Listening' : 'Ready'}</div>
+        <div><strong>Processing:</strong> {isProcessingRef.current ? 'Yes' : 'No'}</div>
+        <div><strong>Browser Support:</strong> {browserSupportsSpeechRecognition ? 'Yes' : 'No'}</div>
+      </div>
+
       <button
-        onClick={toggleListening}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${listening ? 'bg-red-600' : 'bg-purple-600'} text-white hover:opacity-90`}
-        title={listening ? 'Stop listening' : 'Start voice command'}
+        onClick={handleButtonClick}
+        onMouseEnter={() => console.log('Mouse entered button')}
+        onMouseLeave={() => console.log('Mouse left button')}
+        className={`
+          flex items-center gap-3 px-6 py-3 rounded-lg font-medium text-white
+          transition-all duration-200 transform hover:scale-105 active:scale-95
+          ${isListening 
+            ? 'bg-red-600 hover:bg-red-700 shadow-red-200' 
+            : 'bg-purple-600 hover:bg-purple-700 shadow-purple-200'
+          }
+          shadow-lg hover:shadow-xl
+          focus:outline-none focus:ring-4 focus:ring-purple-300
+          cursor-pointer
+        `}
+        style={{ 
+          minWidth: '180px',
+          minHeight: '50px',
+          zIndex: 10,
+          position: 'relative'
+        }}
+        title={isListening ? 'Click to stop listening' : 'Click to start voice command'}
       >
         <span className="text-xl">
-          {listening ? <FaMicrophoneSlash /> : <FaMicrophone />}
+          {isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
         </span>
-        <span>{listening ? "Stop Listening" : "Voice Command"}</span>
+        <span>{isListening ? "Stop Listening" : "Voice Command"}</span>
       </button>
-      <div className="text-sm text-gray-600 min-h-5 transition-all">
-        {listening && <span>Listening... <span className="font-medium">{transcript}</span></span>}
+
+      <div className="text-sm text-gray-600 min-h-6 text-center">
+        {isListening ? (
+          <span className="text-green-600 font-medium">
+            🎤 Listening... Click button to stop
+          </span>
+        ) : (
+          <span>Click the button above to test voice commands</span>
+        )}
+      </div>
+
+      {/* Test buttons for debugging */}
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={() => console.log('Test button 1 clicked')}
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+        >
+          Test Click 1
+        </button>
+        <button
+          onClick={() => console.log('Test button 2 clicked')}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Test Click 2
+        </button>
+      </div>
+
+      <div className="text-xs text-gray-500 mt-4 text-center max-w-md">
+        <strong>Debug Instructions:</strong><br />
+        1. Open browser console (F12)<br />
+        2. Click the voice command button<br />
+        3. Check console for click events<br />
+        4. Try the test buttons below if main button doesn't work
       </div>
     </div>
   );
