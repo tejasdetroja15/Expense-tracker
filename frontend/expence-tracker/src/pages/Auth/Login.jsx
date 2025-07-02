@@ -115,7 +115,7 @@ const Login = () => {
                 value={email}
                 onChange={({ target }) => setEmail(target.value)}
                 label="Email Address"
-                placeholder="Enter your email address"
+                placeholder="test123@gmail.com"
                 type="email"
               />
             </div>
@@ -125,7 +125,7 @@ const Login = () => {
                 value={password}
                 onChange={({ target }) => setPassword(target.value)}
                 label="Password"
-                placeholder="Enter your password"
+                placeholder="test123"
                 type="password"
               />
             </div>
