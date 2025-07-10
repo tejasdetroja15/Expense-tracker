@@ -35,6 +35,11 @@ app.use(session({
 }));
 
 app.use(passport.initialize());
+app.get("/health", (_req, res) => {
+  // lightweight check: doesn't invoke Passport or Google
+  res.status(200).json({ status: "OK" });
+});
+
 connectDB();
 
 // Routes
